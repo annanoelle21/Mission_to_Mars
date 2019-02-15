@@ -50,7 +50,7 @@ def scrape_info():
     browser.visit(weather_twitter_url)
 
     html = browser.html
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = bs(html, 'html.parser')
 
     # find info on if statements in scraping
     tweets = soup.find("div", class_="stream").find("ol").find_all("li", class_="js-stream-item")
