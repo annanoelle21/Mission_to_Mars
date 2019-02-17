@@ -7,7 +7,7 @@ import pandas as pd
 
 def init_browser():
     # @NOTE: Replace the path with your actual path to the chromedriver
-    executable_path = {'executable_path': 'chromedriver.exe'}  #my path is very different and found this to be an easier way to call the chromedriver
+    executable_path = {'executable_path': 'chromedriver.exe'}  #my path is different and found this to be an easier way to call the chromedriver
     return Browser("chrome", **executable_path, headless=False)
 
 def scrape_info():
@@ -36,7 +36,7 @@ def scrape_info():
     html = browser.html
     soup = bs(html, 'html.parser')
 
-    # ?????
+    # inspect to find where the images are
     featured_img_base = "https://www.jpl.nasa.gov"
     featured_img_url_raw = soup.find("div", class_="carousel_items").find("article")["style"]
     featured_img_url = featured_img_url_raw.split("'")[1]
@@ -53,26 +53,19 @@ def scrape_info():
     soup = bs(html, 'html.parser')
 
     # find info on if statements in scraping
-    tweets = soup.find("div", class_="stream").find("ol").find_all("li", class_="js-stream-item")
-    for tweet in tweets:
-        tweet_text = tweet.find("div", class_="js-tweet-text-container").text
-        if "Sol " in tweet_text:
-                mars_weather = tweet_text.strip()
-                break
-
+    mars_one = soup.find('ol', class_='stream-items').find_all("li", class_="js-stream-item")
+    mars_weather = soup.find("div", class_="js-tweet-text-container").text
     mars_results["mars_weather"] = mars_weather
 
     # Mars facts scraping
-
     facts_url = "https://space-facts.com/mars/"
     tables = pd.read_html(facts_url)
     time.sleep(1)
     facts_df = tables[0]
     facts_df.columns = ["Fact","Value"]
 
-    facts_df = facts_df.set_index("Fact")
-    cleaned_df = facts_df.to_html()
-    cleaned_df = cleaned_df.replace('\n', '')
+    facts_df.set_index("Fact", inplace=True)
+    cleaned_df = facts_df.to_html
     
     mars_results["cleaned_df"] = cleaned_df
 
@@ -84,28 +77,22 @@ def scrape_info():
     html = browser.html
     soup = bs(html, 'html.parser')
     
-    hemisphere_image_urls = []
+    image_urls = []
+    dict = {"title: [], 'imgage_url": {},}
 
-    links = soup.find_all("div", class_="item")
+    itmes = soup.find_all("h3")
 
-    for link in links:
-        img_dict = {}
-        title = link.find("h3").text
-        next_link = link.find("div", class_="description").a["href"]
-        full_next_link = base_url + next_link
-        
-        browser.visit(full_next_link)
-        
-        pic_html = browser.html
-        pic_soup = bs(pic_html, 'html.parser')
-        
-        url = pic_soup.find("img", class_="wide-image")["src"]
+    for i in items:
+        link = i.get_text()
+        title = link.strip("Enhanced")
+    
+        browser.click_link(link)
+        pic_url = browser.find_link("download")["href"]
 
-        img_dict["title"] = title
-        img_dict["img_url"] = base_url + url
-        
-        hemisphere_image_urls.append(img_dict)
+        pic_dict = {"title": title, "image_url": pic_url}
+        imgae_urls.append(pic_dict)
+        browser.back()
 
-    mars_results["hemisphere_image_urls"] = hemisphere_image_urls
+    mars_results["image_urls"] = image_urls
 
     return mars_results
